@@ -1,8 +1,34 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as math from "mathjs";
 
 const latexToMathJs = (latex: string): string => {
+  // fractions
   latex = latex.replace(/\\frac{([^{}]+)}{([^{}]+)}/g, "($1)/($2)");
 
+  // square roots
+  latex = latex.replace(/\\sqrt{([^{}]+)}/g, "sqrt($1)");
+
+  // powers
+  latex = latex.replace(/\^{([^{}]+)}/g, "^($1)");
+
+  // common mathematical functions
+  const functions = ["sin", "cos", "tan", "log", "ln"];
+  functions.forEach((func) => {
+    latex = latex.replace(new RegExp(`\\\\${func}`, "g"), func);
+  });
+
+  // Greek letters
+  const greekLetters: { [key: string]: string } = {
+    "\\alpha": "alpha",
+    "\\beta": "beta",
+    "\\gamma": "gamma",
+    "\\pi": "pi",
+  };
+  Object.entries(greekLetters).forEach(([latex, mathjs]) => {
+    latex = latex.replace(new RegExp(latex, "g"), mathjs);
+  });
+
+  // remove other LaTeX commands and symbols
   latex = latex
     .replace(/\\times/g, "*")
     .replace(/\\cdot/g, "*")
@@ -43,11 +69,11 @@ export const areExpressionsEquivalent = (
     }
 
     // for numeric expressions, evaluate and compare
-    const scope = { x: 1 };
+    const scope = { x: 1, y: 2, z: 3 };
     const result1 = parsed1.evaluate(scope);
     const result2 = parsed2.evaluate(scope);
 
-    return Math.abs(result1 - result2) < 1e-10; // compare with small (or big) tolerance for floating-point arithmetic
+    return Math.abs(result1 - result2) < 1e-10; // compare with small tolerance for floating-point arithmetic
   } catch (error) {
     console.error("Error evaluating expressions:", error);
     throw error;
