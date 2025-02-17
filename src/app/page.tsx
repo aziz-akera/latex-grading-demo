@@ -16,17 +16,17 @@ const examples = [
   {
     question: "Simplify: $\\frac{2}{4} + \\frac{1}{6}$",
     correctAnswer: "\\frac{2}{3}",
-    placeholder: "Enter your answer (e.g., \\frac{2}{3}, 2/3, 0.6666)",
+    placeholder: "Enter your answer (e.g., \\frac{2}{3}, 2/3)",
   },
   {
     question: "Solve: $\\sqrt{16} + \\sqrt{9}$",
     correctAnswer: "7",
-    placeholder: "Enter your answer (e.g., 7)",
+    placeholder: "Enter your answer (e.g., 7, 7.0, \\sqrt{49})",
   },
   {
     question: "Simplify: $\\sin^2(x) + \\cos^2(x)$",
     correctAnswer: "1",
-    placeholder: "Enter your answer (e.g., 1)",
+    placeholder: "Enter your answer (e.g., 1, cos(0))",
   },
   {
     question: "Calculate: $\\log_{10}(100)$",

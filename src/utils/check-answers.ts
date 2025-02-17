@@ -1,47 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as math from "mathjs";
+import { convertLatexToAsciiMath } from "mathlive";
 
-const latexToMathJs = (latex: string): string => {
-  // fractions
-  latex = latex.replace(/\\frac{([^{}]+)}{([^{}]+)}/g, "($1)/($2)");
+const customMath = math.create(math.all, {});
 
-  // square roots
-  latex = latex.replace(/\\sqrt{([^{}]+)}/g, "sqrt($1)");
+customMath.import(
+  {
+    ln: (x: number) => Math.log(x),
+    log: (x: number, base: number = 10) => Math.log(x) / Math.log(base),
+    exp: (x: number) => Math.exp(x),
+  },
+  { override: true }
+);
 
-  // powers
-  latex = latex.replace(/\^{([^{}]+)}/g, "^($1)");
-
-  // common mathematical functions
-  const functions = ["sin", "cos", "tan", "log", "ln"];
-  functions.forEach((func) => {
-    latex = latex.replace(new RegExp(`\\\\${func}`, "g"), func);
-  });
-
-  // Greek letters
-  const greekLetters: { [key: string]: string } = {
-    "\\alpha": "alpha",
-    "\\beta": "beta",
-    "\\gamma": "gamma",
-    "\\pi": "pi",
-  };
-  Object.entries(greekLetters).forEach(([latex, mathjs]) => {
-    latex = latex.replace(new RegExp(latex, "g"), mathjs);
-  });
-
-  // remove other LaTeX commands and symbols
-  latex = latex
-    .replace(/\\times/g, "*")
-    .replace(/\\cdot/g, "*")
-    .replace(/\\left/g, "")
-    .replace(/\\right/g, "")
-    .replace(/\\[{}]/g, "");
-
-  return latex;
+const normalizeMultiplication = (expr: string): string => {
+  return expr.replace(/∗/g, "*"); // replace Unicode multiplication sign with standard asterisk
 };
 
 const evaluateExpression = (expr: string): math.MathNode => {
   try {
-    return math.parse(expr);
+    return customMath.parse(expr);
   } catch (error) {
     throw new Error(
       `Failed to parse expression: ${expr}. ${(error as Error).message}`
@@ -54,15 +31,18 @@ export const areExpressionsEquivalent = (
   expression2: string
 ): boolean => {
   try {
-    const mathJs1 = latexToMathJs(expression1);
-    const mathJs2 = latexToMathJs(expression2);
+    let mathJs1 = convertLatexToAsciiMath(expression1);
+    let mathJs2 = convertLatexToAsciiMath(expression2);
+
+    mathJs1 = normalizeMultiplication(mathJs1);
+    mathJs2 = normalizeMultiplication(mathJs2);
 
     const parsed1 = evaluateExpression(mathJs1);
     const parsed2 = evaluateExpression(mathJs2);
 
     // for algebraic expressions, compare the simplified forms
-    const simplified1 = math.simplify(parsed1).toString();
-    const simplified2 = math.simplify(parsed2).toString();
+    const simplified1 = customMath.simplify(parsed1).toString();
+    const simplified2 = customMath.simplify(parsed2).toString();
 
     if (simplified1 === simplified2) {
       return true;

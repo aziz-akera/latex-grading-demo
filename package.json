@@ -11,8 +11,11 @@
   "dependencies": {
     "algebra-latex": "^2.0.3",
     "katex": "^0.16.21",
+    "latex.js": "^0.12.6",
     "lucide-react": "^0.475.0",
+    "mathjax-full": "^3.2.2",
     "mathjs": "^14.2.1",
+    "mathlive": "^0.103.0",
     "next": "15.1.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
