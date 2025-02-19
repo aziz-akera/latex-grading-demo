@@ -28,7 +28,8 @@ const evaluateExpression = (expr: string): math.MathNode => {
 
 export const areExpressionsEquivalent = (
   expression1: string,
-  expression2: string
+  expression2: string,
+  tolerance: number = 1e-10
 ): boolean => {
   try {
     let mathJs1 = convertLatexToAsciiMath(expression1);
@@ -53,7 +54,7 @@ export const areExpressionsEquivalent = (
     const result1 = parsed1.evaluate(scope);
     const result2 = parsed2.evaluate(scope);
 
-    return Math.abs(result1 - result2) < 1e-10; // compare with small tolerance for floating-point arithmetic
+    return Math.abs(result1 - result2) < tolerance; // compare with small tolerance for floating-point arithmetic
   } catch (error) {
     console.error("Error evaluating expressions:", error);
     throw error;
