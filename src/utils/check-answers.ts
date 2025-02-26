@@ -20,10 +20,21 @@ interface GradingOptions {
   isIntegral?: boolean;
   isDomainRestriction?: boolean;
   isComplexNumber?: boolean;
+  lang?: 'en' | 'fr';
 }
 
 const normalizeMultiplication = (expr: string): string => {
   return expr.replace(/∗/g, "*"); // replace Unicode multiplication sign with standard asterisk
+};
+
+const normalizeDecimalSeparator = (expr: string, lang: 'en' | 'fr' = 'en'): string => {
+  if (lang === 'fr') {
+    // convert English decimal points to French decimal commas
+    return expr.replace(/(\d+)\.(\d+)/g, '$1,$2');
+  } else {
+    // convert French decimal commas to English decimal points
+    return expr.replace(/(\d+),(\d+)/g, '$1.$2');
+  }
 };
 
 const evaluateExpression = (expr: string): math.MathNode => {
@@ -219,19 +230,23 @@ export const areExpressionsEquivalent = (
       allowMultipleSolutions = false,
       isDomainRestriction = false,
       isComplexNumber = false,
+      lang = 'en', 
     } = options;
 
+    const normalizedStudentAnswer = normalizeDecimalSeparator(studentAnswer, lang);
+    const normalizedCorrectAnswer = normalizeDecimalSeparator(correctAnswer, lang);
+
     if (isDomainRestriction) {
-      return areDomainRestrictionsEquivalent(studentAnswer, correctAnswer);
+      return areDomainRestrictionsEquivalent(normalizedStudentAnswer, normalizedCorrectAnswer);
     }
 
     if (isComplexNumber) {
-      return areComplexNumbersEquivalent(studentAnswer, correctAnswer);
+      return areComplexNumbersEquivalent(normalizedStudentAnswer, normalizedCorrectAnswer);
     }
 
     if (allowMultipleSolutions) {
-      const studentSolutions = parseSolutionSet(studentAnswer);
-      const correctSolutions = parseSolutionSet(correctAnswer);
+      const studentSolutions = parseSolutionSet(normalizedStudentAnswer);
+      const correctSolutions = parseSolutionSet(normalizedCorrectAnswer);
 
       if (studentSolutions.size !== correctSolutions.size) {
         return false;
@@ -240,7 +255,7 @@ export const areExpressionsEquivalent = (
       for (const solution of studentSolutions) {
         let found = false;
         for (const correctSolution of correctSolutions) {
-          if (areExpressionsEquivalent(solution, correctSolution)) {
+          if (areExpressionsEquivalent(solution, correctSolution, { lang })) {
             found = true;
             break;
           }
@@ -252,7 +267,7 @@ export const areExpressionsEquivalent = (
     }
 
     if (requireSimplified) {
-      const studentFraction = extractFraction(studentAnswer);
+      const studentFraction = extractFraction(normalizedStudentAnswer);
       if (studentFraction) {
         if (!isSimplestForm(studentFraction.numerator, studentFraction.denominator)) {
           return false;
@@ -261,12 +276,12 @@ export const areExpressionsEquivalent = (
     }
 
     if (requireFullFactorization) {
-      return areFactorizationsEquivalent(studentAnswer, correctAnswer, true);
+      return areFactorizationsEquivalent(normalizedStudentAnswer, normalizedCorrectAnswer, true);
     }
 
-    // Convert LaTeX to AsciiMath for standard processing
-    let mathJs1 = convertLatexToAsciiMath(studentAnswer);
-    let mathJs2 = convertLatexToAsciiMath(correctAnswer);
+    // convert LaTeX to AsciiMath for standard processing
+    let mathJs1 = convertLatexToAsciiMath(normalizedStudentAnswer);
+    let mathJs2 = convertLatexToAsciiMath(normalizedCorrectAnswer);
 
     mathJs1 = normalizeMultiplication(mathJs1);
     mathJs2 = normalizeMultiplication(mathJs2);
@@ -274,7 +289,6 @@ export const areExpressionsEquivalent = (
     const parsed1 = evaluateExpression(mathJs1);
     const parsed2 = evaluateExpression(mathJs2);
 
-    // Test numerical equivalence at multiple points
     const testPoints = [-2, -1, 0, 1, 2, 3];
     const scope: Record<string, number> = {};
 
