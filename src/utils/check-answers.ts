@@ -214,6 +214,10 @@ const areComplexNumbersEquivalent = (expr1: string, expr2: string): boolean => {
   }
 };
 
+const normalizeIntegralAnswer = (expr: string): string => {
+  return expr.replace(/([+-])?\s*C\s*/, ""); // Remove C or +C or -C
+};
+
 export const areExpressionsEquivalent = (
   studentAnswer: string,
   correctAnswer: string,
@@ -231,10 +235,21 @@ export const areExpressionsEquivalent = (
       isDomainRestriction = false,
       isComplexNumber = false,
       lang = 'en', 
+      isIntegral = false,
     } = options;
 
     const normalizedStudentAnswer = normalizeDecimalSeparator(studentAnswer, lang);
     const normalizedCorrectAnswer = normalizeDecimalSeparator(correctAnswer, lang);
+
+    if (isIntegral) {
+      if (!studentAnswer.includes("C")) {
+        return false;
+      };
+      const normalizedStudentIntegral = normalizeIntegralAnswer(normalizedStudentAnswer);
+      const normalizedCorrectIntegral = normalizeIntegralAnswer(normalizedCorrectAnswer);
+      
+      return areExpressionsEquivalent(normalizedStudentIntegral, normalizedCorrectIntegral, { lang });
+    }
 
     if (isDomainRestriction) {
       return areDomainRestrictionsEquivalent(normalizedStudentAnswer, normalizedCorrectAnswer);

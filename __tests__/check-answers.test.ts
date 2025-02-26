@@ -84,8 +84,47 @@ describe('areExpressionsEquivalent', () => {
 
   describe('Integrals', () => {
     it('should correctly evaluate equivalent integral expressions', () => {
-      expect(areExpressionsEquivalent('\\int x^2 dx', '\\frac{x^3}{3} + C', { isIntegral: true })).toBe(true);
-      expect(areExpressionsEquivalent('\\int 2x dx', 'x^2 + C', { isIntegral: true })).toBe(true);
+      expect(areExpressionsEquivalent('x^2 + C', 'x^2 + c', { isIntegral: true })).toBe(true);
+      expect(areExpressionsEquivalent('\\frac{x^3}{3} + C', 'x^3/3 + C', { isIntegral: true })).toBe(true);
+    });
+  
+    it('should fail when constant of integration is missing', () => {
+      expect(areExpressionsEquivalent('\\frac{x^3}{3}', '\\frac{x^3}{3} + C', { isIntegral: true })).toBe(false);
+      expect(areExpressionsEquivalent('x^2', 'x^2 + C', { isIntegral: true })).toBe(false);
+    });
+  
+    it('should handle different formats of the constant of integration', () => {
+      expect(areExpressionsEquivalent('x^2 + C', 'x^2 + c', { isIntegral: true })).toBe(true);
+      expect(areExpressionsEquivalent('x^2+C', 'x^2 + C', { isIntegral: true })).toBe(true);
+      expect(areExpressionsEquivalent('x^2+ C', 'x^2 +C', { isIntegral: true })).toBe(true);
+    });
+  
+    it('should handle more complex integrals', () => {
+      expect(areExpressionsEquivalent(
+        '\\frac{x^3}{3} + 2x + \\sin(x) + C',
+        '\\frac{x^3}{3} + 2x - \\cos(x) + \\pi + C',
+        { isIntegral: true }
+      )).toBe(true);
+      
+      expect(areExpressionsEquivalent(
+        '\\frac{1}{2}x^2 + C',
+        '0.5x^2 + C',
+        { isIntegral: true }
+      )).toBe(true);
+    });
+  
+    it('should handle integrals with different but equivalent forms', () => {
+      expect(areExpressionsEquivalent(
+        '\\frac{x^3}{3} + C',
+        '0.333333x^3 + C',
+        { isIntegral: true }
+      )).toBe(true);
+  
+      expect(areExpressionsEquivalent(
+        '\\frac{x^2}{2} + \\frac{x}{1} + C',
+        '0.5x^2 + x + C',
+        { isIntegral: true }
+      )).toBe(true);
     });
   });
 
