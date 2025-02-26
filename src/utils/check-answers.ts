@@ -30,25 +30,20 @@ const evaluateExpression = (expr: string): math.MathNode => {
   try {
     return customMath.parse(expr);
   } catch (error) {
-    throw new Error(
-      `Failed to parse expression: ${expr}. ${(error as Error).message}`
-    );
+    throw new Error(`Failed to parse expression: ${expr}. ${(error as Error).message}`);
   }
 };
 
 const isSimplestForm = (numerator: number, denominator: number): boolean => {
   const gcd = (a: number, b: number): number => {
-    return b === 0 ? a : gcd(b, a % b);
+    return b === 0 ? Math.abs(a) : gcd(b, a % b);
   };
 
   return gcd(Math.abs(numerator), Math.abs(denominator)) === 1;
 };
 
-const extractFraction = (
-  expr: string
-): { numerator: number; denominator: number } | null => {
+const extractFraction = (expr: string): { numerator: number; denominator: number } | null => {
   try {
-    // try to match fraction patterns like "a/b" or "\\frac{a}{b}"
     const fractionRegex = /^(\d+)\/(\d+)$/;
     const latexFractionRegex = /^\\frac\{(\d+)\}\{(\d+)\}$/;
 
@@ -70,7 +65,7 @@ const extractFraction = (
 
     return null;
   } catch (error) {
-    console.log("Error extracting fraction:", error);
+    console.error("Error extracting fraction:", error);
     return null;
   }
 };
@@ -82,7 +77,6 @@ const parseSolutionSet = (expr: string): Set<string> => {
   const normalizedSolutions = new Set<string>();
   for (const solution of solutions) {
     if (solution.includes("=")) {
-      // Handle "x = value" format
       const value = solution.split("=")[1].trim();
       normalizedSolutions.add(value);
     } else {
@@ -115,38 +109,26 @@ const areFactorizationsEquivalent = (
     const normalizedExpr1 = normalizeFactorization(expr1);
     const normalizedExpr2 = normalizeFactorization(expr2);
 
-    const standardExpr1 = customMath.simplify(normalizedExpr1).toString();
-    const standardExpr2 = customMath.simplify(normalizedExpr2).toString();
+    if (requireFullFactorization) {
+      const factorCount1 = (normalizedExpr1.match(/\(/g) || []).length;
+      const factorCount2 = (normalizedExpr2.match(/\(/g) || []).length;
 
-    if (standardExpr1 === standardExpr2) {
-      // if expressions are equivalent, check for complete factorization if required
-      if (requireFullFactorization) {
-        const factorCount1 = (normalizedExpr1.match(/\(/g) || []).length;
-        const factorCount2 = (normalizedExpr2.match(/\(/g) || []).length;
-
-        if (factorCount1 !== factorCount2) {
-          return false;
-        }
+      if (factorCount1 !== factorCount2) {
+        return false;
       }
-      return true;
     }
 
+    // Test numerical equivalence at multiple points
     const testPoints = [-2, -1, 0, 1, 2, 3, 4, 5];
     const scope: Record<string, number> = {};
 
     for (const point of testPoints) {
       scope.x = point;
+      const value1 = customMath.evaluate(normalizedExpr1, scope);
+      const value2 = customMath.evaluate(normalizedExpr2, scope);
 
-      try {
-        const value1 = customMath.evaluate(normalizedExpr1, scope);
-        const value2 = customMath.evaluate(normalizedExpr2, scope);
-
-        if (Math.abs(value1 - value2) > 1e-10) {
-          return false;
-        }
-      } catch (e) {
-        console.log("Error evaluating factorizations:", e);
-        continue;
+      if (Math.abs(value1 - value2) > 1e-10) {
+        return false;
       }
     }
 
@@ -157,104 +139,64 @@ const areFactorizationsEquivalent = (
   }
 };
 
-const areDomainRestrictionsEquivalent = (
-  expr1: string,
-  expr2: string
-): boolean => {
+const areDomainRestrictionsEquivalent = (expr1: string, expr2: string): boolean => {
   const normalize = (expr: string): string => {
     return expr
       .replace(/\$|\$/g, "")
-
       .replace(/\s+/g, "")
-
       .replace(/\\setminus/g, "\\")
       .replace(/\\backslash/g, "\\")
       .replace(/\\/g, "\\")
-
       .replace(/\\mathbb\{R\}/g, "R")
       .replace(/\\mathbb{R}/g, "R")
       .replace(/\\R/g, "R")
       .replace(/R\*/g, "R\\{0}")
-
       .replace(/\\infty/g, "inf")
       .replace(/-\\infty/g, "-inf")
       .replace(/\+\\infty/g, "inf")
       .replace(/infinity/g, "inf")
-
       .replace(/\\cup/g, "∪")
       .replace(/\\union/g, "∪")
       .replace(/U/g, "∪")
-
       .replace(/\\in/g, "in")
       .replace(/∈/g, "in")
-
       .replace(/\\/g, "")
-
       .replace(/x=/g, "")
       .replace(/x/g, "")
-
-      .replace(/$$(-inf),(0)$$/g, "R\\{0}")
-      .replace(/$$(0),inf$$/g, "R\\{0}")
-      .replace(/$$(-inf,0)$$∪$$(0,inf)$$/g, "R\\{0}")
-
+      .replace(/$$\-inf\,0$$∪$$0\,inf$$/g, "R\\{0}")
+      .replace(/\[\-inf\,0\[∪\]0\,inf\]/g, "R\\{0}")
+      .replace(/\]\-inf\;0\[∪\]0\;\+inf\[/g, "R\\{0}")
       .toLowerCase()
       .replace(/[{}]/g, "")
       .replace(/[()]/g, "")
       .replace(/;/g, ",");
   };
 
-  try {
-    const normalized1 = normalize(expr1);
-    const normalized2 = normalize(expr2);
+  const normalized1 = normalize(expr1);
+  const normalized2 = normalize(expr2);
 
-    if (normalized1 === normalized2) {
-      return true;
-    }
-
-    const toSet = (expr: string): Set<string> => {
-      const parts = expr.split("∪").map((p) => p.trim());
-      return new Set(parts);
-    };
-
-    const set1 = toSet(normalized1);
-    const set2 = toSet(normalized2);
-
-    if (set1.size !== set2.size) {
-      return false;
-    }
-
-    for (const item of set1) {
-      if (!set2.has(item)) {
-        return false;
-      }
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Error comparing domain restrictions:", error);
-    return false;
-  }
+  return normalized1 === normalized2;
 };
 
 const areComplexNumbersEquivalent = (expr1: string, expr2: string): boolean => {
   try {
-    const parseComplex = (expr: string): math.Complex => {
-      // handle different formats: "a + bi", "a + ib", etc.
+    const parseComplex = (expr: string): { re: number; im: number } => {
       const normalized = expr
+        .replace(/\s+/g, "")
         .replace(/(\d+)i/g, "$1*i")
         .replace(/i(\d+)/g, "i*$1");
 
-      return customMath.evaluate(normalized) as math.Complex;
+      const complex = customMath.evaluate(normalized);
+      return {
+        re: typeof complex.re === "number" ? complex.re : 0,
+        im: typeof complex.im === "number" ? complex.im : 0,
+      };
     };
 
     const complex1 = parseComplex(expr1);
     const complex2 = parseComplex(expr2);
 
-    // compare real and imaginary parts
-    return (
-      Math.abs(complex1.re - complex2.re) < 1e-10 &&
-      Math.abs(complex1.im - complex2.im) < 1e-10
-    );
+    return Math.abs(complex1.re - complex2.re) < 1e-10 && Math.abs(complex1.im - complex2.im) < 1e-10;
   } catch (error) {
     console.error("Error comparing complex numbers:", error);
     return false;
@@ -266,12 +208,15 @@ export const areExpressionsEquivalent = (
   correctAnswer: string,
   options: GradingOptions = {}
 ): boolean => {
+  if (!studentAnswer || !correctAnswer) {
+    throw new Error("Both student answer and correct answer must be provided");
+  }
+
   try {
     const {
       requireSimplified = false,
       requireFullFactorization = false,
       allowMultipleSolutions = false,
-      // isIntegral = false,
       isDomainRestriction = false,
       isComplexNumber = false,
     } = options;
@@ -284,7 +229,6 @@ export const areExpressionsEquivalent = (
       return areComplexNumbersEquivalent(studentAnswer, correctAnswer);
     }
 
-    // handle multiple solutions
     if (allowMultipleSolutions) {
       const studentSolutions = parseSolutionSet(studentAnswer);
       const correctSolutions = parseSolutionSet(correctAnswer);
@@ -310,12 +254,7 @@ export const areExpressionsEquivalent = (
     if (requireSimplified) {
       const studentFraction = extractFraction(studentAnswer);
       if (studentFraction) {
-        if (
-          !isSimplestForm(
-            studentFraction.numerator,
-            studentFraction.denominator
-          )
-        ) {
+        if (!isSimplestForm(studentFraction.numerator, studentFraction.denominator)) {
           return false;
         }
       }
@@ -325,7 +264,7 @@ export const areExpressionsEquivalent = (
       return areFactorizationsEquivalent(studentAnswer, correctAnswer, true);
     }
 
-    // convert LaTeX to AsciiMath for standard processing
+    // Convert LaTeX to AsciiMath for standard processing
     let mathJs1 = convertLatexToAsciiMath(studentAnswer);
     let mathJs2 = convertLatexToAsciiMath(correctAnswer);
 
@@ -335,20 +274,22 @@ export const areExpressionsEquivalent = (
     const parsed1 = evaluateExpression(mathJs1);
     const parsed2 = evaluateExpression(mathJs2);
 
-    const simplified1 = customMath.simplify(parsed1).toString();
-    const simplified2 = customMath.simplify(parsed2).toString();
+    // Test numerical equivalence at multiple points
+    const testPoints = [-2, -1, 0, 1, 2, 3];
+    const scope: Record<string, number> = {};
 
-    if (simplified1 === simplified2) {
-      return true;
+    for (const point of testPoints) {
+      scope.x = point;
+      const value1 = parsed1.evaluate(scope);
+      const value2 = parsed2.evaluate(scope);
+
+      if (Math.abs(value1 - value2) > 1e-10) {
+        return false;
+      }
     }
 
-    const scope = { x: 1, y: 2, z: 3 };
-    const result1 = parsed1.evaluate(scope);
-    const result2 = parsed2.evaluate(scope);
-
-    return Math.abs(result1 - result2) < 1e-10; // compare with small tolerance for floating-point arithmetic
+    return true;
   } catch (error) {
-    console.error("Error evaluating expressions:", error);
-    throw error;
+    throw new Error(`Error evaluating expressions: ${(error as Error).message}`);
   }
 };
