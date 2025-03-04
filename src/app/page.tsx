@@ -1,11 +1,12 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import "katex/dist/katex.min.css"
-import Latex from "react-latex-next"
-import { areExpressionsEquivalent } from "@/utils/check-answers"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import type React from "react";
+import { useState } from "react";
+import "katex/dist/katex.min.css";
+import Latex from "react-latex-next";
+import { areExpressionsEquivalent } from "@/utils/check-answers";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import MathInput from "./keyboard/math-input";
 
 const examples = [
   {
@@ -21,7 +22,8 @@ const examples = [
     options: {},
   },
   {
-    question: "Express the probability of drawing a heart from a standard deck of cards in simplest form.",
+    question:
+      "Express the probability of drawing a heart from a standard deck of cards in simplest form.",
     correctAnswer: "\\frac{1}{4}",
     placeholder: "Answer format: \\frac{1}{4} or 1/4 (must be simplified)",
     options: { requireSimplified: true },
@@ -41,7 +43,8 @@ const examples = [
   {
     question: "Specify the domain of $f(x) = \\frac{1}{x}$",
     correctAnswer: "x \\in \\mathbb{R}\\setminus\\{0\\}",
-    placeholder: "Answer format: x \\in \\mathbb{R}\\setminus\\{0\\} or R\\{0} or ]-∞;0[∪]0;+∞[",
+    placeholder:
+      "Answer format: x \\in \\mathbb{R}\\setminus\\{0\\} or R\\{0} or ]-∞;0[∪]0;+∞[",
     options: { isDomainRestriction: true },
   },
   {
@@ -74,47 +77,55 @@ const examples = [
     placeholder: "Answer format: 5",
     options: {},
   },
-]
+];
 
 export default function Home() {
-  const [userAnswer, setUserAnswer] = useState("")
-  const [result, setResult] = useState<string | null>(null)
-  const [questionIndex, setQuestionIndex] = useState(0)
-  const [showHint, setShowHint] = useState(false)
+  const [userAnswer, setUserAnswer] = useState("");
+  const [result, setResult] = useState<string | null>(null);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [showHint, setShowHint] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
       if (
-        areExpressionsEquivalent(userAnswer, examples[questionIndex].correctAnswer, examples[questionIndex].options)
+        areExpressionsEquivalent(
+          userAnswer,
+          examples[questionIndex].correctAnswer,
+          examples[questionIndex].options
+        )
       ) {
-        setResult("Correct!")
+        setResult("Correct!");
       } else {
-        setResult("Incorrect. Try again.")
+        setResult("Incorrect. Try again.");
       }
     } catch (error) {
-      setResult(`Invalid input: ${(error as Error).message}`)
+      setResult(`Invalid input: ${(error as Error).message}`);
     }
-  }
+  };
 
   const changeQuestion = (newIndex: number) => {
-    setQuestionIndex(newIndex)
-    setUserAnswer("")
-    setResult(null)
-    setShowHint(false)
-  }
+    setQuestionIndex(newIndex);
+    setUserAnswer("");
+    setResult(null);
+    setShowHint(false);
+  };
 
-  const nextQuestion = () => changeQuestion((questionIndex + 1) % examples.length)
-  const prevQuestion = () => changeQuestion((questionIndex - 1 + examples.length) % examples.length)
+  const nextQuestion = () =>
+    changeQuestion((questionIndex + 1) % examples.length);
+  const prevQuestion = () =>
+    changeQuestion((questionIndex - 1 + examples.length) % examples.length);
 
   const toggleHint = () => {
-    setShowHint(!showHint)
-  }
+    setShowHint(!showHint);
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 lg:p-24">
-      <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-8 text-center">Advanced Math Quiz Demo</h1>
+      <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-8 text-center">
+        Advanced Math Quiz Demo
+      </h1>
       <div className="w-full max-w-2xl px-2 md:px-4">
         <div className="mb-4 md:mb-6 flex items-center justify-between">
           <button
@@ -129,7 +140,9 @@ export default function Home() {
                 key={index}
                 onClick={() => changeQuestion(index)}
                 className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                  index === questionIndex ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                  index === questionIndex
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-200 text-gray-600 hover:bg-gray-300"
                 }`}
               >
                 {index + 1}
@@ -145,25 +158,32 @@ export default function Home() {
         </div>
         <div className="bg-white shadow-md rounded-lg p-4 md:p-6">
           <div className="mb-4">
-            <h2 className="text-lg md:text-xl font-semibold mb-2">Question {questionIndex + 1}:</h2>
+            <h2 className="text-lg md:text-xl font-semibold mb-2">
+              Question {questionIndex + 1}:
+            </h2>
             <div className="text-sm md:text-base">
               <Latex>{examples[questionIndex].question}</Latex>
             </div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="answer" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="answer"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Your Answer:
               </label>
-              <input
-                type="text"
-                id="answer"
+              <MathInput
+                // id="answer"
                 value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                className="mt-1 p-2 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm md:text-base"
+                onChange={setUserAnswer}
                 placeholder={examples[questionIndex].placeholder}
+                className="mt-1"
               />
-              <p className="mt-1 text-xs md:text-sm text-gray-500">{examples[questionIndex].placeholder}</p>
+
+              <p className="mt-1 text-xs md:text-sm text-gray-500">
+                {examples[questionIndex].placeholder}
+              </p>
             </div>
             <div className="flex flex-col md:flex-row gap-2">
               <button
@@ -184,7 +204,9 @@ export default function Home() {
           {result && (
             <div
               className={`mt-4 p-2 rounded text-sm md:text-base ${
-                result === "Correct!" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                result === "Correct!"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
               }`}
             >
               {result}
@@ -197,20 +219,19 @@ export default function Home() {
                 {examples[questionIndex].options.requireSimplified
                   ? "Make sure your answer is in the simplest form."
                   : examples[questionIndex].options.requireFullFactorization
-                    ? "Make sure to factor the expression completely."
-                    : examples[questionIndex].options.allowMultipleSolutions
-                      ? "Remember to include all solutions."
-                      : examples[questionIndex].options.isDomainRestriction
-                        ? "Specify the domain using proper notation."
-                        : examples[questionIndex].options.isComplexNumber
-                          ? "Remember to simplify both real and imaginary parts."
-                          : "Try to simplify your answer as much as possible."}
+                  ? "Make sure to factor the expression completely."
+                  : examples[questionIndex].options.allowMultipleSolutions
+                  ? "Remember to include all solutions."
+                  : examples[questionIndex].options.isDomainRestriction
+                  ? "Specify the domain using proper notation."
+                  : examples[questionIndex].options.isComplexNumber
+                  ? "Remember to simplify both real and imaginary parts."
+                  : "Try to simplify your answer as much as possible."}
               </p>
             </div>
           )}
         </div>
       </div>
     </main>
-  )
+  );
 }
-
